@@ -47,23 +47,29 @@ func HighlightSearch(highlighted, query string, targetIdx int) string {
 		return highlighted
 	}
 	
+	lowerQuery := strings.ToLower(query)
 	var result strings.Builder
 	cursor := 0
 	matchCounter := 0
 	
-	for {
+	// Pre-size builder to avoid re-allocations
+	result.Grow(len(highlighted) + 100)
+
+	for cursor < len(highlighted) {
 		start := strings.Index(highlighted[cursor:], "\x1b[")
 		if start == -1 {
-			res, count := highlightPlainPart(highlighted[cursor:], query, targetIdx, matchCounter)
+			res, count := highlightPlainPart(highlighted[cursor:], lowerQuery, targetIdx, matchCounter)
 			result.WriteString(res)
 			matchCounter = count
 			break
 		}
 		
 		start += cursor
-		res, count := highlightPlainPart(highlighted[cursor:start], query, targetIdx, matchCounter)
-		result.WriteString(res)
-		matchCounter = count
+		if start > cursor {
+			res, count := highlightPlainPart(highlighted[cursor:start], lowerQuery, targetIdx, matchCounter)
+			result.WriteString(res)
+			matchCounter = count
+		}
 		
 		end := strings.IndexAny(highlighted[start:], "mABCDHJKfhnpsu")
 		if end == -1 {
@@ -78,17 +84,16 @@ func HighlightSearch(highlighted, query string, targetIdx int) string {
 	return result.String()
 }
 
-func highlightPlainPart(text, query string, targetIdx, currentCount int) (string, int) {
-	if query == "" || text == "" {
+func highlightPlainPart(text, lowerQuery string, targetIdx, currentCount int) (string, int) {
+	if lowerQuery == "" || text == "" {
 		return text, currentCount
 	}
 
 	lowerText := strings.ToLower(text)
-	lowerQuery := strings.ToLower(query)
-
 	var result strings.Builder
 	cursor := 0
 	count := currentCount
+	
 	for {
 		idx := strings.Index(lowerText[cursor:], lowerQuery)
 		if idx == -1 {
@@ -99,7 +104,7 @@ func highlightPlainPart(text, query string, targetIdx, currentCount int) (string
 		idx += cursor
 		result.WriteString(text[cursor:idx])
 
-		matchText := text[idx : idx+len(query)]
+		matchText := text[idx : idx+len(lowerQuery)]
 		style := searchMatchStyle
 		if count == targetIdx {
 			style = currentMatchStyle
@@ -107,7 +112,7 @@ func highlightPlainPart(text, query string, targetIdx, currentCount int) (string
 		result.WriteString(style.Render(matchText))
 
 		count++
-		cursor = idx + len(query)
+		cursor = idx + len(lowerQuery)
 	}
 	return result.String(), count
 }

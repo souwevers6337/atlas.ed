@@ -81,6 +81,10 @@ type Model struct {
 	matches     []int
 	matchIndex  int
 	
+	// Cache
+	highlightedContent   string
+	lastHighlightedValue string
+
 	width  int
 	height int
 }
@@ -89,8 +93,10 @@ func NewModel(filename string, content string) Model {
 	ta := textarea.New()
 	ta.Placeholder = "Start typing..."
 	ta.SetValue(content)
+	ta.SetCursor(0) // Start at the top
 	ta.Focus()
 	ta.ShowLineNumbers = true
+	ta.LineNumberStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#D4AF37"))
 
 	si := textinput.New()
 	si.Placeholder = "Search query..."
@@ -211,6 +217,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+l":
 			m.showLineNumbers = !m.showLineNumbers
 			m.textarea.ShowLineNumbers = m.showLineNumbers
+		case "pgup":
+			for i := 0; i < m.textarea.Height(); i++ {
+				m.textarea.CursorUp()
+			}
+		case "pgdown":
+			for i := 0; i < m.textarea.Height(); i++ {
+				m.textarea.CursorDown()
+			}
+		case "home":
+			m.textarea.CursorStart()
+		case "end":
+			m.textarea.CursorEnd()
 		}
 
 	case tea.WindowSizeMsg:
@@ -227,15 +245,33 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.mode == ModeEdit {
 		var taCmd tea.Cmd
-		prevVal := m.textarea.Value()
-		m.textarea, taCmd = m.textarea.Update(msg)
-		if m.textarea.Value() != prevVal {
-			m.modified = true
-			m.undoStack = append(m.undoStack, prevVal)
-			m.redoStack = nil // Clear redo on new change
-			if len(m.undoStack) > 100 {
-				m.undoStack = m.undoStack[1:]
+		
+		if kmsg, ok := msg.(tea.KeyMsg); ok {
+			s := kmsg.String()
+			// Keys that definitely don't change content (navigation, toggle, find, quit)
+			isNav := s == "up" || s == "down" || s == "left" || s == "right" ||
+				s == "pgup" || s == "pgdown" || s == "home" || s == "end" ||
+				s == "ctrl+s" || s == "ctrl+f" || s == "ctrl+l" || s == "ctrl+q" || s == "ctrl+c" ||
+				s == "ctrl+z" || s == "ctrl+y" || s == "esc"
+
+			if !isNav {
+				prevVal := m.textarea.Value()
+				m.textarea, taCmd = m.textarea.Update(msg)
+				newVal := m.textarea.Value()
+				if newVal != prevVal {
+					m.modified = true
+					m.undoStack = append(m.undoStack, prevVal)
+					m.redoStack = nil
+					if len(m.undoStack) > 100 {
+						m.undoStack = m.undoStack[1:]
+					}
+				}
+			} else {
+				m.textarea, taCmd = m.textarea.Update(msg)
 			}
+		} else {
+			// Not a KeyMsg (e.g., Blink, WindowSizeMsg)
+			m.textarea, taCmd = m.textarea.Update(msg)
 		}
 		cmds = append(cmds, taCmd)
 	}
@@ -245,24 +281,34 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *Model) updateViewport() {
 	content := m.textarea.Value()
-	highlighted, _ := editor.Highlight(content, m.filename)
-	final := editor.HighlightSearch(highlighted, m.searchQuery, m.matchIndex)
+	if content != m.lastHighlightedValue {
+		highlighted, _ := editor.Highlight(content, m.filename)
+		m.highlightedContent = highlighted
+		m.lastHighlightedValue = content
+	}
+	
+	final := editor.HighlightSearch(m.highlightedContent, m.searchQuery, m.matchIndex)
 	
 	if m.showLineNumbers {
+		var sb strings.Builder
 		lines := strings.Split(final, "\n")
 		width := len(fmt.Sprintf("%d", len(lines)))
 		for i, line := range lines {
-			num := lipgloss.NewStyle().Foreground(lipgloss.Color("#555555")).Render(fmt.Sprintf("%*d ", width, i+1))
-			lines[i] = num + line
+			sb.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("#D4AF37")).Render(fmt.Sprintf("%*d ", width, i+1)))
+			sb.WriteString(line)
+			if i < len(lines)-1 {
+				sb.WriteByte('\n')
+			}
 		}
-		final = strings.Join(lines, "\n")
+		final = sb.String()
 	}
 	m.viewport.SetContent(final)
 	
-	offset := m.matches[m.matchIndex]
-	plain := m.textarea.Value()
-	lineNum := strings.Count(plain[:offset], "\n")
-	m.viewport.SetYOffset(lineNum)
+	if len(m.matches) > 0 && m.matchIndex >= 0 {
+		offset := m.matches[m.matchIndex]
+		lineNum := strings.Count(content[:offset], "\n")
+		m.viewport.SetYOffset(lineNum)
+	}
 }
 
 func (m *Model) undo() {
